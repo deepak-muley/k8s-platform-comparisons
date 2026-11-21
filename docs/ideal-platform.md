@@ -36,7 +36,7 @@ Compatibility is a matrix on the package. The hub evaluates it before a wave sta
 
 A build that needs a new kernel says so on the package. A CNI that installs a kernel module is an OS wave, then a CNI wave. The wave is created as speed 3, so the drain is visible before you start.
 
-kube-proxy and CoreDNS are packages. They are not fields inside the Kubernetes version. The node image carries the kernel, the OS userspace, and the container runtime. It does not carry the CNI, CSI, CCM, or Prometheus binaries the cluster runs. Those are pods.
+kube-proxy and CoreDNS are packages. They are not fields inside the Kubernetes version. The node image carries the kernel, the OS userspace, and the container runtime. It does not carry the CNI, CSI, CCM, or Prometheus binaries the cluster runs. Those are pods. Which of today's products already ship those as separate artifacts, and which print one version over several of them, is [What you track](versioning.md#what-you-track).
 
 ## One wave, one component
 

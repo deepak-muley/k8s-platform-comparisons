@@ -1,6 +1,6 @@
 # Versioning
 
-What each digit is, and which digit moves for a Kubernetes patch, an OS rebuild, a CVE, and an add-on. How those digits are cut across the life of one minor, and how a platform team rolls each kind through hundreds of clusters, is [One minor, four clocks](#one-minor-four-clocks-kubernetes-135). What that change does to a node is [CVE scope](cve-scope.md). How long the old digit stays supported is [Compatibility](compatibility.md). The fan-out is [Upgrade at scale](scale.md).
+What each digit is, and which digit moves for a Kubernetes patch, an OS rebuild, a CVE, and an add-on. The artifacts those digits are printed on, and which components share an artifact, are [What you track](#what-you-track). How those digits are cut across the life of one minor, and how a platform team rolls each kind through hundreds of clusters, is [One minor, four clocks](#one-minor-four-clocks-kubernetes-135). What that change does to a node is [CVE scope](cve-scope.md). How long the old digit stays supported is [Compatibility](compatibility.md). The fan-out is [Upgrade at scale](scale.md). The split a platform would have if every component were its own artifact is [An ideal Kubernetes platform](ideal-platform.md).
 
 Documented November 2026. The strings below are the shapes those products print. A channel list from the day you upgrade beats a string copied off this page.
 
@@ -30,6 +30,121 @@ CoreDNS, etcd, and the CNI and CSI projects have their own `MAJOR.MINOR.PATCH`. 
 | Rancher | The manager minor `2.15`, which is a support matrix, not a Kubernetes minor. | The manager patch `2.15.3`. Downstream Kubernetes stays. | Downstream, on that cluster's row above. | Downstream, on that cluster's row. | The feature chart's version (monitoring, logging, Fleet). |
 
 Support extensions do not add a digit. OpenShift EUS is an even `4.y` on the `eus-4.y` channel. GKE extended support is the same `1.Y.Z-gke.N` on the `extended` channel. EKS extended support is the same minor, with AWS still publishing `eks.N`. AKS LTS is the same `1.Y.Z` on the Premium `AKSLongTermSupport` plan, and only the two newest patches of that minor stay in support. EKS Anywhere extended Kubernetes is the same `kubernetesVersion`, and the patch arrives inside a later `v0.M.x` for clusters that have a license token.
+
+## What you track
+
+The OS image is one artifact. A cluster upgrade is the set of artifacts that product actually ships. Two components that share an artifact move together, even when a release note lists them on separate lines. Two artifacts that share a version number can still be staged and rolled apart.
+
+`nkp version` is the case that makes this obvious. It prints `nkp`, `konvoy`, and `kommander` at the same `2.y.z`. Those are three artifacts, and the node image is a fourth that is not inside the air-gap tarball. OpenShift and GKE look like one number and still are not "the OS image updates the cluster." OpenShift's number is a release payload that contains the OS. GKE's number is a build Google applies to the control plane and, as a second operation, to the nodes.
+
+| | Artifacts you can stage apart | What one of those artifacts carries together |
+| --- | --- | --- |
+| NKP | CLI, Konvoy image bundle, Kommander image bundle and charts, catalog bundle, node image, charts you installed | Konvoy: Kubernetes images, CAPI, bundled CNI and CSI. Kommander: the default platform-app set. Node image: OS and kubelet. |
+| OpenShift | Release payload. Operator catalog index. Operators and charts you subscribed to. | The payload: apiserver, etcd, OVN-Kubernetes, monitoring, the ingress operator, and RHCOS (`machine-os`). |
+| GKE | The GKE version, applied to the control plane and then to each node pool. Charts you installed. | That `1.Y.Z-gke.N`: kubelet, the node image, Dataplane V2 or kube-proxy, GCE PD CSI. |
+| EKS | Platform version (AWS applies it), the AMI, each managed add-on, charts you installed | The AMI: OS, containerd, kubelet. Each add-on is its own artifact. |
+| EKS Anywhere | The `v0.M.x` release, the OS template or `osImageURL`, each curated package, the CSI chart you installed | The release: Kubernetes patch, Cilium, the controllers. The machines roll. |
+| AKS | `kubernetesVersion` / `orchestratorVersion`, `nodeImageVersion`, charts you installed | The Kubernetes version: kubelet, Azure CNI, Azure Disk / File / Blob CSI. The node image: the OS. |
+| RKE2 | The RKE2 package, the OS packages, charts you installed. Rancher, and Rancher's feature charts, when you use them. | The RKE2 package: Kubernetes, its containerd, bundled CNI, bundled CoreDNS. |
+| Ideal | One artifact per component. See [below](#what-the-ideal-tracks). | The component the wave names. A coupling is written on the wave as `also moves`. |
+
+### NKP
+
+Same product version, separate tarballs. The 2.17 air-gap bundle unpacks to the list in [NKP](platforms/nkp.md). The node image is a portal download of its own. You import it into Prism. The bundle does not contain it.
+
+| Artifact | Example | What a bump changes | When it rolls |
+| --- | --- | --- | --- |
+| CLI | `nkp` `v2.19.0` | The commands on the bastion. `nkp version` also prints konvoy and kommander at that version. | Before the cluster. The binary has to be the target release. |
+| Konvoy | `konvoy-image-bundle-v2.19.0.tar` | Container images for Kubernetes, CAPI, and the bundled CNI and CSI. | `nkp upgrade capi-components` and `nkp upgrade addons`, or inside `nkp upgrade cluster nutanix`. |
+| Kommander | `kommander-image-bundle-v2.19.0.tar` and `kommander-applications-v2.19.0.tar.gz` | The management UI, and the default app set as one collection of charts: Prometheus, Grafana, Traefik, Dex, Flux, cert-manager, gatekeeper. | `nkp upgrade kommander`, then `nkp upgrade workspace` or `nkp upgrade platform-apps`, before the Kubernetes version. |
+| Catalog | `nkp-catalog-applications-image-bundle-v2.19.0.tar` | Harbor, Istio, and the other optional apps. | One `AppDeployment` at a time. Left alone by the Kommander upgrade. |
+| Node image | `nkp-rocky-9.8-release-cis-1.36.2-….qcow2` | OS and the kubelet baked into that disk. | `--vm-image`. New VMs. A second image whose name still contains `1.36.2` is the OS rebuild. |
+| Bootstrap | `konvoy-bootstrap-image-v2.19.0.tar` | The temporary kind image for install. | Install. A day-2 upgrade does not roll it. |
+
+Konvoy is not the OS, and Kommander is not Konvoy. A CVE in Traefik is a Kommander chart bump. A CVE in the bundled Cilium image is a Konvoy bundle bump (`nkp upgrade addons`), and on Nutanix that roll is speed 2 unless you are also replacing VMs. A CVE in the kernel is a new node image, speed 3, and it carries the kubelet that was baked in. Your own chart is a fifth clock on every provider, including this one.
+
+### OpenShift
+
+One cluster version, `4.19.6`, is one payload image: `quay.io/openshift-release-dev/ocp-release:4.19.6-x86_64`. The Cluster Version Operator reconciles the cluster from that image. Inside it are the control-plane operators, OVN-Kubernetes, the monitoring stack, the ingress operator, and `machine-os`, which is the RHCOS content the Machine Config Operator rebases onto the node. You do not download an RHCOS image and upgrade it on its own. The z-stream is the OS update and the kubelet update.
+
+That is one package for the payload, and it is a large one. It is not the only package on the cluster.
+
+| Artifact | Example | What it carries | When it rolls |
+| --- | --- | --- | --- |
+| Release payload | `4.19.6-x86_64` and its digest | Kubernetes, OVN, monitoring, ingress operator, RHCOS | `oc adm upgrade`. Nodes reboot for the `machine-os` half. |
+| Catalog index | `redhat-operator-index:v4.y` | Optional operators: logging, GitOps, Service Mesh, ODF, a CSI subscription | A new CSV in the current index, approved as an InstallPlan. A fix that exists only in the next payload waits for the z-stream. |
+| Charts you installed | your release | That chart | `helm upgrade`. |
+
+ACM, when you run it, is another operator. It is not inside the payload of the clusters it manages. The hub's payload and a spoke's payload are two upgrades.
+
+### GKE
+
+You do not store a package. You select `1.35.6-gke.1641000`, and Google applies that build. The control plane and the node pools are two operations on the same build. The node image (Container-Optimized OS or Ubuntu) is a member of the build, not a second version you pin. Image type is a family (`COS_CONTAINERD`, `UBUNTU_CONTAINERD`). Dataplane V2, kube-proxy, and GCE PD CSI move with the build. Filestore CSI and Cloud Storage FUSE are switches. Google chooses the build behind the switch.
+
+Charts you installed are the only artifacts whose version you hold. There is no Kommander bundle. A fleet is a grouping of clusters, not a package of apps.
+
+### EKS
+
+This is the product with the most packages, and none of them is implied by the others.
+
+| Artifact | Example | Carries | Stays put when |
+| --- | --- | --- | --- |
+| Cluster minor | `1.35` | The minor you asked for | A patch arrives as `eks.N` on its own |
+| Platform version | `eks.23` | The control-plane patch and control-plane fixes | You roll an AMI or an add-on |
+| AMI | `…-1.35-v20261107`, release `1.35.10-20261107` | OS, containerd, kubelet | `update-addon`, and a control-plane platform bump |
+| One managed add-on | `v1.40.0-eksbuild.2` for `aws-ebs-csi-driver`, and the same shape for `vpc-cni`, `coredns`, `kube-proxy` | That add-on | The AMI date changes |
+| Your chart | the chart version | That chart | Any of the above |
+
+`update-cluster-version` does not publish a new AMI and does not bump `vpc-cni`. A platform engineer tracking "the EKS version" and skipping the add-on versions is how a fleet stays on a CSI build that left the compatibility list.
+
+### EKS Anywhere
+
+| Artifact | Example | Carries |
+| --- | --- | --- |
+| EKS Anywhere release | `v0.26.4` | Controllers, the Kubernetes patch for each minor that release lists, Cilium |
+| `kubernetesVersion` | `1.35` | Which minor. The patch is the one in the release. |
+| OS image | template name, or `osImageURL` | The disk, built per minor |
+| Curated package | `spec.packageVersion` | That package. `upgrade cluster` leaves it. |
+| Your CSI chart | chart version | That driver. The release does not install one. |
+
+### AKS
+
+Two artifacts you can name, plus yours.
+
+| Artifact | Example | Carries |
+| --- | --- | --- |
+| Kubernetes version | `1.35.10` on the cluster, `orchestratorVersion` on the pool | Control plane, kubelet, Azure CNI, Azure Disk / File / Blob CSI |
+| Node image | `AKSUbuntu-2404gen2containerd-202611.07.0`, or with a `-2026.11.21` security suffix | The OS VHD. `--node-image-only` leaves the Kubernetes version and the Azure CSI charts. |
+| Your chart | chart version | That chart |
+
+Azure CNI and the Azure CSI drivers are not packages you pin. They arrive inside the Kubernetes version. A node-image week does not refresh them.
+
+### RKE2 and Rancher
+
+| Artifact | Example | Carries |
+| --- | --- | --- |
+| RKE2 | `v1.35.10+rke2r1` rpm or air-gap tarball | Kubernetes, RKE2's containerd, Canal or the bundled CNI, CoreDNS, the charts under `server/manifests` |
+| OS | the distro package set (`kernel`, the rest of `dnf` / `apt`) | The host. The RKE2 version stays. |
+| Your chart | chart version | CSI, or Cilium when `cni: none` |
+| Rancher | `v2.15.3` | The manager. Downstream RKE2 versions stay. |
+| Rancher feature chart | `rancher-monitoring`, `rancher-logging`, the Fleet agent chart | That chart. A Rancher patch leaves it. |
+
+`+rke2r2` is a new RKE2 package of the same Kubernetes patch. It can carry a new bundled chart or a new containerd. It does not carry a new kernel. The kernel is the OS package.
+
+### What the ideal tracks
+
+One artifact per row. A wave names one row. The design is [An ideal Kubernetes platform](ideal-platform.md). The node image carries the kernel, the OS userspace, and the container runtime. CNI, CSI, the cloud controller manager, and Prometheus are pods, each with its own chart.
+
+| Artifact | A CVE in it |
+| --- | --- |
+| Node image | New image digest. Kubelet, CNI, CSI, and apps stay on their pins. |
+| Kubernetes control plane | The apiserver and its peers. Workers stay. |
+| Kubelet | Its own field on the pool. The OS image stays. |
+| kube-proxy, CoreDNS, CNI, CSI, CCM | That chart. Speed 2. |
+| Each platform app | That chart. The other apps stay. |
+| Each tenant app | That chart, on the spokes the selector names. |
+
+NKP already has the management bundle (Kommander) apart from the cluster bundle (Konvoy), and the node image apart from both. The ideal keeps those as separate waves and then splits Konvoy: the bundled CNI, the bundled CSI, and the kubelet each get a pin, so a Traefik CVE, a Cilium CVE, and a kernel CVE are three waves. OpenShift's payload and GKE's `-gke.N` are the opposite shape, one artifact over many components. Where a product cannot split, the wave lists `also moves` and both cells change together. The preferred build is still the split.
 
 ## One minor, four clocks: Kubernetes 1.35
 
