@@ -1,6 +1,6 @@
 # Install and upgrade, TLDR
 
-The command, then the object it writes. Flags, channels, and what a CVE actually moves are in the linked page. Versions below match the rest of this repo (November 2026). Dry-run before you apply.
+The command, then the object it writes. Flags, channels, and what a CVE actually moves are in the linked page. Versions below match the rest of this repo (November 2026). Dry-run before you apply. How far behind a kubelet, a Cluster API workload, or a cluster-local Flux may be, when a Kubernetes minor stops receiving patches, and the page that states each window, is [Compatibility](compatibility.md).
 
 | | Install | Upgrade Kubernetes | OS only, same Kubernetes | Vendor CSI / CNI only | Object to watch |
 | --- | --- | --- | --- | --- | --- |

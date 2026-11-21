@@ -183,7 +183,7 @@ gcloud container clusters upgrade "${CLUSTER}" \
   --location "${REGION}"
 ```
 
-The control plane and the nodes are different operations and can differ by the supported skew (nodes older than the control plane, inside the policy). Auto-upgrade exists so a pool you forgot does not sit there past that skew. Prefer leaving auto-upgrade on and controlling *when* with the maintenance window, rather than turning it off.
+The control plane and the nodes are different operations. GKE's skew policy allows nodes at the control plane version or up to two minor versions older, and does not allow nodes newer than the control plane. Auto-upgrade exists so a pool you forgot does not sit past that window. Prefer leaving auto-upgrade on and controlling *when* with the maintenance window, rather than turning it off. The other products' windows are in [Compatibility](../compatibility.md).
 
 Surge with `maxUnavailable=0` keeps the old node until the new one is Ready. You need a spare IP and spare quota for the surge node. Blue-green brings up a second copy of the pool and then cuts over. Use it when a surge of 1 is too slow and you can pay for the overlap. Autopilot pools use surge. You do not pick blue-green there.
 

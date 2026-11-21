@@ -87,13 +87,17 @@ Skip a step and the failure mode is specific: Kommander apps that call removed A
 
 ## Version skew you can actually run
 
+The numbers, the Cluster API release matrix, the add-on ranges, the upstream patch calendar from [endoflife.date/kubernetes](https://endoflife.date/kubernetes), and the reason Flux, Dex, and Thanos are newer on the management cluster than on the cluster that pulls them are in [Compatibility](compatibility.md). This is the short form.
+
 | Platform | Control plane vs node | Add-on vs cluster |
 | --- | --- | --- |
-| Kubernetes itself | Node may be up to 3 minor versions older than the control plane on modern Kubernetes (the skew policy widened; confirm the minor you run). Vendors are often stricter than upstream. | — |
-| OpenShift | Nodes trail the payload by the time a `MachineConfigPool` takes to roll. Do not pause a pool across a minor upgrade and leave it there. | Optional operators must have a CSV valid for the target minor before you move `ClusterVersion`. |
-| NKP | One NKP minor at a time. The management cluster moves first. | Platform apps are upgraded with `nkp upgrade workspace` or `nkp upgrade platform-apps` before the Kubernetes version. Core add-ons are bundled; you do not run a newer CNI than the NKP release you are on. |
-| GKE | Nodes can lag the control plane inside the channel's skew window. Auto-upgrade exists so they do not lag past it. | Google-managed CSI/CNI track the GKE version. Your own charts must match the node minor. |
-| EKS | Node groups and Fargate can lag; AWS enforces the skew when you call `update-cluster-version`. | Add-ons do not move when the cluster minor moves. You pick a compatible `addonVersion` yourself. |
-| EKS Anywhere | No minor skips. Management components may be at most one EKS Anywhere minor ahead of the cluster components. | Cilium is inside the cluster version. Your CSI chart is independent and can move any day. |
-| AKS | Node pools can be a minor behind the control plane inside the supported skew. | Azure CSI and Azure CNI move with the AKS version more than as a free-floating chart. Node image can move alone (`--node-image-only`). |
-| RKE2 | Upgrade one minor at a time. Servers before agents. All servers should land on the new version before agents do. | Charts you installed stay put until you upgrade them. Bundled charts (Canal, CoreDNS, ingress-nginx when enabled) move with the RKE2 version. |
+| Kubernetes itself | Kubelet may be up to 3 minor versions older than the apiserver (2 if the kubelet is older than 1.25). It may not be newer. `kubectl` may be one minor older or newer. Controller-manager and scheduler may be one minor older during the upgrade. In November 2026 the maintained minors are 1.37, 1.36, and 1.35. 1.34 maintenance ended 27 Oct 2026. A legal old kubelet can already be off the patch calendar. | — |
+| OpenShift | Equal versions once the pools finish. During the roll, kubelet may be 1 minor older on an odd minor and 2 minors older on an even minor. | Optional operators need a CSV for the target minor before `ClusterVersion` moves. Payload operators move with the release. |
+| NKP | One NKP minor at a time. The management cluster moves first. ClusterClass clusters run one Kubernetes version on every machine. | Platform apps move with `nkp upgrade workspace` or `nkp upgrade platform-apps` before Kubernetes. Management Flux, Dex, and Thanos are already the new version while the cluster is still pulling with the old ones. Core add-ons stay on the NKP release's version. |
+| GKE | Nodes may be the control plane version or up to 2 minors older. Auto-upgrade exists so they do not sit past that. | Google-managed CSI/CNI track the GKE version. Your own charts must match the node minor. |
+| EKS | Node groups and Fargate may lag by up to 3 minors from Kubernetes 1.28 (2 before that). AWS enforces it on `update-cluster-version`. | Add-ons stay until `update-addon`. `describe-addon-versions --kubernetes-version` for the target minor is the compatibility check. |
+| EKS Anywhere | No minor skips. The management cluster may be at most one EKS Anywhere minor ahead of a workload cluster. Kubelet skew follows upstream (3 from 1.28). | Cilium is inside the cluster version. A curated package stays on `spec.packageVersion` across the machine roll. Your CSI chart can move any day. |
+| AKS | From Kubernetes 1.28 the control plane may be up to 3 minors ahead of a node pool. The pool may not be newer. | Azure CSI and Azure CNI move with the AKS version. Node image can move alone (`--node-image-only`). |
+| RKE2 | One minor at a time. Servers before agents. Kubelet skew is the upstream window. | Charts you installed stay until you upgrade them. Bundled charts (Canal, CoreDNS, ingress-nginx when enabled) move with the RKE2 version. Rancher 2.15 is certified for downstream Kubernetes 1.34–1.36. |
+
+A design where each of those rows is its own wave, apps included, from a hub out to every cluster, is [Ideal platform](ideal-platform.md).

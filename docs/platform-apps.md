@@ -12,6 +12,16 @@ Three piles, and they do not move together:
 
 A Helm release the product does not own never moves because the Kubernetes version moved.
 
+## The management copy is newer
+
+Flux, Dex, and Thanos are installed twice on a platform that has a management cluster and workload clusters. After `nkp upgrade kommander` (or the equivalent management upgrade on Rancher or an OpenShift hub), the management copy is the new chart and the workload copy is still the previous one. The workload copy is the one doing the work:
+
+- The workload cluster's Flux pulls that cluster's `GitRepository`, `OCIRepository`, `HelmRelease`, and `Kustomization` objects. The management Flux installed that Flux, and it reconciles the management cluster's own sources. It does not pull the workload's Helm releases.
+- Dex on the management cluster is the platform login broker. A Dex on the workload cluster, and the issuer URL that cluster's apiserver already trusts, stay on the last platform-app version until that cluster's apps move.
+- Thanos Querier, Store, and Compactor move with the management `kube-prometheus-stack`. The Prometheus and Thanos sidecar on the workload cluster stay in that cluster's chart. A newer querier can read an older sidecar only as far as that Thanos pair's changelog still allows.
+
+`nkp upgrade workspace` or `nkp upgrade platform-apps` is the step that brings the cluster copies up to the management version. Until it finishes, the gap is the supported sequence. The ranges, the image commands, and the same split for cert-manager, Traefik, gatekeeper, Rancher charts, and Fleet are in [Compatibility](compatibility.md).
+
 ## What moves when the platform moves
 
 | | Logging and monitoring the product installed | The rest of the default platform set | Catalog / optional apps | Your own Helm chart |

@@ -110,6 +110,8 @@ Cluster API v1.12 (January 2026) can apply some Machine changes in place when th
 
 `nkp upgrade capi-components` on the management cluster is the step that upgrades the controllers (CAPI, CAPX, CAPA, …). Do it before the workload-cluster roll on the non-Nutanix providers. The Nutanix management-cluster command includes it. Old controllers will happily try to honor a new template they do not understand.
 
+Which Kubernetes minors that new controller build is allowed to create, on the management cluster and on a workload cluster, is a different table from the OS-image rule. In November 2026 the supported CAPI minors are v1.14 and v1.13, with v1.12 in maintenance since 18 August 2026. Workload clusters may be older than the management cluster. They may not be a minor the release does not list. The cells, the patch floors (v1.14.0 does not include Kubernetes 1.37; v1.14.1 does), and the command that prints the image tag are in [Compatibility](compatibility.md).
+
 ## The other platforms
 
 | Platform | Engine | Same machine or a new one | Kubernetes moves, OS image stays | OS image moves, Kubernetes version stays |

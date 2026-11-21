@@ -151,7 +151,7 @@ for addon in vpc-cni kube-proxy coredns aws-ebs-csi-driver; do
 done
 ```
 
-If you skip this loop, the cluster minor is new and the CNI is old. That works until it does not, usually at the next minor, when the old add-on version disappears from the compatibility table.
+If you skip this loop, the cluster minor is new and the CNI is old. That works until it does not, usually at the next minor, when the old add-on version disappears from the compatibility table. The proof for a target minor is `aws eks describe-addon-versions --kubernetes-version` that minor, and a hit in `compatibilities[].clusterVersion`. The same check for the other products is in [Compatibility](../compatibility.md).
 
 ### Node AMI only
 

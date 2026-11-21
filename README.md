@@ -4,6 +4,8 @@ Hands-on comparison of how these platforms are installed, how configuration is c
 
 Documented November 2026. Commands were checked against OpenShift 4.18/4.19, NKP 2.17–2.19, current GKE and Google Distributed Cloud air-gapped, Amazon EKS, EKS Anywhere, AKS with Fleet Manager, and RKE2/Rancher. Minor releases move flags. Dry-run, then apply.
 
+Start here: [Executive summary](docs/summary.md).
+
 ## Platforms
 
 | Doc | What it is |
@@ -18,14 +20,17 @@ Documented November 2026. Commands were checked against OpenShift 4.18/4.19, NKP
 
 ## How to read this
 
-1. [TLDR](docs/tldr.md) — install and upgrade commands, and the CRD or API object each one writes.
-2. [Concepts](docs/concepts.md) — core vs add-on, and the four speeds a change can have.
-3. [Comparison](docs/comparison.md) — one matrix for ownership, upgrade unit, and blast radius.
-4. [Cluster API](docs/capi.md) — why NKP on CAPX replaces the VM, and which products can move Kubernetes without the OS image.
-5. [CVE scope](docs/cve-scope.md) — a patch for one component versus a patch that moves Kubernetes and the node OS together.
-6. [Platform apps](docs/platform-apps.md) — logging, monitoring, and catalog apps, and which products upgrade them when the platform version moves.
-7. The platform page for the product you operate.
-8. [Air gap](docs/airgap.md) and [Upgrade at scale](docs/scale.md) when you are doing either for real.
+1. [Executive summary](docs/summary.md) — the findings on one page.
+2. [TLDR](docs/tldr.md) — install and upgrade commands, and the CRD or API object each one writes.
+3. [Concepts](docs/concepts.md) — core vs add-on, and the four speeds a change can have.
+4. [Comparison](docs/comparison.md) — one matrix for ownership, upgrade unit, and blast radius.
+5. [Compatibility](docs/compatibility.md) — how far behind a kubelet, a Cluster API workload, or a cluster-local Flux may sit, how far ahead the management copy of Flux, Dex, and Thanos is allowed to be, and when each Kubernetes minor stops receiving patches. Each cell links the page that states it.
+6. [Cluster API](docs/capi.md) — why NKP on CAPX replaces the VM, and which products can move Kubernetes without the OS image.
+7. [CVE scope](docs/cve-scope.md) — a patch for one component versus a patch that moves Kubernetes and the node OS together.
+8. [Platform apps](docs/platform-apps.md) — logging, monitoring, and catalog apps, and which products upgrade them when the platform version moves.
+9. The platform page for the product you operate.
+10. [Air gap](docs/airgap.md) and [Upgrade at scale](docs/scale.md) when you are doing either for real.
+11. [Ideal platform, summary](docs/ideal-platform-summary.md) — one page. The full design is [Ideal platform](docs/ideal-platform.md): every layer on its own wave, apps from a hub to every spoke, and one grid for thousands of clusters.
 
 ## The distinction that matters
 

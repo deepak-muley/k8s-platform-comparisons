@@ -233,6 +233,8 @@ nkp upgrade workspace "${WORKSPACE_NAME}"
 
 The management cluster's own platform apps move with `nkp upgrade kommander` (the `kommander` workspace). `nkp upgrade workspace` moves managed and attached clusters in that workspace. Do every workspace before you change the Kubernetes version. Old platform apps are not compatible with the Kubernetes version in the new NKP release.
 
+Between those two commands the management copies are ahead of the cluster copies. Flux, Dex, and Thanos all do this. The cluster's own Flux is the one pulling that cluster's `HelmRelease` and `OCIRepository` objects. The management Flux is the one that installed it. Compare the image tags on both contexts before you call a CVE done. The windows and the commands are in [Compatibility](../compatibility.md).
+
 During this step the UI and the custom dashboard hostname can blip. Tokens for attached clusters are reissued. Users need a fresh kubeconfig from the Kommander endpoint after the upgrade.
 
 On 2.19, for a non-ClusterClass cluster, `nkp upgrade platform-apps` is the independent platform-app step.

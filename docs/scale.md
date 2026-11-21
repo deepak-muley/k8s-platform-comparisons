@@ -207,4 +207,4 @@ A fleet you cannot describe will eventually run two CNI versions and three CSI v
 - Whether the next air-gap bundle for the *following* version is already in the registry.
 - The last successful upgrade date and the change window that owns the cluster.
 
-EKS `aws eks describe-addon --addon-name vpc-cni`, OpenShift `oc get clusterversion`, NKP `kubectl get nkpclusters -A`, and `kubectl get ds -A` for the CNI and CSI DaemonSets are the raw sources. The inventory is only useful if a pipeline writes it after every run.
+EKS `aws eks describe-addon --addon-name vpc-cni`, OpenShift `oc get clusterversion`, NKP `kubectl get nkpclusters -A`, and `kubectl get ds -A` for the CNI and CSI DaemonSets are the raw sources. The inventory is only useful if a pipeline writes it after every run. The design that makes this grid the home screen, with each version on its own wave, is [Ideal platform](ideal-platform.md).
