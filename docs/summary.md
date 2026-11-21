@@ -59,6 +59,7 @@ Upstream Kubernetes patches the latest three minors. In November 2026 those are 
 | Core vs add-on, and the four speeds | [Concepts](concepts.md) |
 | Ownership, upgrade unit, blast radius | [Comparison](comparison.md) |
 | Skew, two copies on the hub, patch end dates | [Compatibility](compatibility.md) |
+| What each digit of a version means | [Versioning](versioning.md) |
 | Why an NKP node upgrade replaces the VM | [Cluster API](capi.md) |
 | What a CVE actually moves | [CVE scope](cve-scope.md) |
 | Logging, monitoring, catalog apps | [Platform apps](platform-apps.md) |

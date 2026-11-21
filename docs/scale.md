@@ -52,7 +52,7 @@ PodDisruptionBudgets are the other throttle, and they will stall a roll on purpo
 
 ## Layered cadence
 
-Run these on different clocks.
+Run these on different clocks. Which number each clock increments, including a Kubernetes patch cut during the maintenance window, is the 1.35 tree in [Versioning](versioning.md#one-minor-four-clocks-kubernetes-135).
 
 | Layer | Reasonable cadence | Why it is not tied to the Kubernetes minor |
 | --- | --- | --- |

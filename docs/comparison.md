@@ -4,7 +4,7 @@ Read [concepts](concepts.md) for the speed numbers. Speed 1 is a config write. S
 
 Versions below are the products as documented in November 2026. CNI defaults have moved recently on NKP (Cilium on Nutanix infrastructure, Calico still generated in the AWS/pre-provisioned upgrade examples). Trust a dry-run of the release you are installing.
 
-How far behind a kubelet or an add-on may sit, which Cluster API release can create which Kubernetes minor, when each Kubernetes minor stops receiving patches ([endoflife.date/kubernetes](https://endoflife.date/kubernetes)), and why Flux, Dex, and Thanos on the management cluster are newer than the copies pulling on the workload cluster: [Compatibility](compatibility.md).
+How far behind a kubelet or an add-on may sit, which Cluster API release can create which Kubernetes minor, when each Kubernetes minor stops receiving patches ([endoflife.date/kubernetes](https://endoflife.date/kubernetes)), and why Flux, Dex, and Thanos on the management cluster are newer than the copies pulling on the workload cluster: [Compatibility](compatibility.md). How each vendor numbers a minor, a patch, an OS rebuild, and an add-on rebuild: [Versioning](versioning.md).
 
 ## Who owns what
 
