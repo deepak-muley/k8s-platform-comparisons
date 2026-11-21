@@ -133,13 +133,14 @@ Azure CNI and the Azure CSI drivers are not packages you pin. They arrive inside
 
 ### What the ideal tracks
 
-One artifact per row. A wave names one row. The design is [An ideal Kubernetes platform](ideal-platform.md). The node image carries the kernel, the OS userspace, and the container runtime. CNI, CSI, the cloud controller manager, and Prometheus are pods, each with its own chart.
+One artifact per row. A wave names one row. The design is [An ideal Kubernetes platform](ideal-platform.md). The node image carries the kernel and the boot userspace. The kubelet and the container runtime are host packages on top of it. CNI, CSI, the cloud controller manager, and Prometheus are pods, each with its own chart. Which component is the image, which is a host package, and which is a chart is [Image or bundle](ideal-platform.md#image-or-bundle).
 
 | Artifact | A CVE in it |
 | --- | --- |
-| Node image | New image digest. Kubelet, CNI, CSI, and apps stay on their pins. |
+| Node image | New image digest. Kubelet, runtime, CNI, CSI, and apps stay on their pins. |
 | Kubernetes control plane | The apiserver and its peers. Workers stay. |
-| Kubelet | Its own field on the pool. The OS image stays. |
+| Kubelet | Its own package on the pool. The OS image stays. Speed 3. |
+| Container runtime | Its own package. The kernel digest stays. Speed 3. |
 | kube-proxy, CoreDNS, CNI, CSI, CCM | That chart. Speed 2. |
 | Each platform app | That chart. The other apps stay. |
 | Each tenant app | That chart, on the spokes the selector names. |

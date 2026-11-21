@@ -16,6 +16,16 @@ Publish the artifact. Open one wave. Watch the canary gate. A wave names one com
 
 A DaemonSet fix never reboots a node. A kernel fix never bumps Prometheus. Skew stays inside [Compatibility](compatibility.md): kubelet at most three minors behind the apiserver and never ahead, CCM at most one minor behind and never ahead.
 
+## Image or bundle
+
+The OS image is the slow artifact: a build, a mirror, a drain per node. It holds the kernel, firmware, and the boot userspace, plus a kernel module when a chart needs one. The kubelet and the container runtime are host packages on that image, so a runtime CVE drains the node and leaves the kernel digest where it is. CNI, CSI, CCM, kube-proxy, CoreDNS, and apps are charts. A chart rolls pods. The long version is [Image or bundle](ideal-platform.md#image-or-bundle).
+
+| OS image, speed 3 | Host package, speed 3, image stays | Chart, speed 2, nodes stay |
+| --- | --- | --- |
+| Kernel, firmware, boot userspace, a kernel module the chart needs | Kubelet, container runtime | CNI, CSI, CCM, kube-proxy, CoreDNS, Prometheus, Flux |
+
+A new node is composed from those pins. A wave moves one of them. The control plane is its own images, and workers stay.
+
 ## The screen
 
 | Ring | Clusters | os | kubernetes | kubelet | cni | csi | ccm | prometheus |

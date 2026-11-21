@@ -22,10 +22,10 @@ Compatibility is a matrix on the package. The hub evaluates it before a wave sta
 
 | Component | How it rolls | What moves with it |
 | --- | --- | --- |
-| Node OS (kernel, OS packages) | Speed 3. New image, or a package update on the host, then a drain. | That node. Kubernetes, CNI, CSI, CCM, and apps keep their pins. |
-| Container runtime | Speed 3 when containers must restart. Own artifact, so a runtime CVE ships without a kernel bump. | Pods on the node, via drain. Kernel, kubelet, and charts stay. |
+| Node OS (kernel, firmware, boot userspace) | Speed 3. New image, then a drain. | That node. The kubelet, the runtime, Kubernetes, CNI, CSI, CCM, and apps keep their pins. |
+| Container runtime | Speed 3. Host package, or its own image layer. A runtime CVE ships without a kernel bump. | Pods on the node, via drain. The kernel digest stays. Kubelet and charts stay. |
 | Kubernetes control plane | API update. Workers stay. | apiserver, etcd, scheduler, controller-manager. |
-| Kubelet | Speed 3. Its own field on the pool. May lag the apiserver by three minors. May not be newer. | The node. The OS image stays if you did not rebuild it. |
+| Kubelet | Speed 3. Host package, or its own image layer. May lag the apiserver by three minors. May not be newer. | The node. The OS image stays. |
 | kube-proxy | Speed 2. Package. May lag the apiserver by three minors. May not be newer. | Its DaemonSet. |
 | CoreDNS | Speed 2. Package. Its own chart range, not the Kubernetes version. | Its Deployment. |
 | CNI | Speed 2. Package. | Its pods. Existing flows survive a short restart. New pods wait for the DaemonSet. |
@@ -36,7 +36,39 @@ Compatibility is a matrix on the package. The hub evaluates it before a wave sta
 
 A build that needs a new kernel says so on the package. A CNI that installs a kernel module is an OS wave, then a CNI wave. The wave is created as speed 3, so the drain is visible before you start.
 
-kube-proxy and CoreDNS are packages. They are not fields inside the Kubernetes version. The node image carries the kernel, the OS userspace, and the container runtime. It does not carry the CNI, CSI, CCM, or Prometheus binaries the cluster runs. Those are pods. Which of today's products already ship those as separate artifacts, and which print one version over several of them, is [What you track](versioning.md#what-you-track).
+kube-proxy and CoreDNS are packages. They are not fields inside the Kubernetes version. Which of those packages is the OS image, which is a host package, and which is a chart is [Image or bundle](#image-or-bundle). Which of today's products already ship those as separate artifacts, and which print one version over several of them, is [What you track](versioning.md#what-you-track).
+
+## Image or bundle
+
+A fix stays fast when the component is a bundle. The OS image is the slow artifact: build it, mirror it, drain a node onto it. A component is in that image only when the node cannot boot or be reached without it. Everything that can run as a pod is a chart. The kubelet and the container runtime cannot be pods. They are still bundles: a host package, or a layer with its own digest, so a runtime CVE does not republish the kernel and a kernel CVE does not republish the kubelet.
+
+A bundle is one component's artifact. It is a chart, or a host package. It is not a tarball that holds the CNI, the CSI, and the kubelet together. That tarball is how one Tuesday fix drains the node.
+
+| Component | Artifact | What a fix costs |
+| --- | --- | --- |
+| Kernel, firmware, boot userspace (systemd, the CA bundle, the console) | OS image | Speed 3. New image digest, then a drain per node. |
+| Kernel module a CNI or CSI chart needs | OS image. The chart stays a chart. | Speed 3 for the module, then that chart's own wave. The module has to match the running kernel. The agent that uses it does not. |
+| Container runtime | Host package, or its own image layer | Speed 3. Drain. The kernel digest stays. |
+| Kubelet | Host package, or its own image layer | Speed 3. Drain. The OS image stays. It may lag the apiserver by three minors. |
+| apiserver, etcd, scheduler, controller-manager | Their own images | The control plane. Workers stay. The worker image stays. |
+| kube-proxy, CoreDNS, CNI, CSI, CCM | One chart each | Speed 2. Pods roll. Nodes stay up. |
+| Platform apps (Flux, Prometheus, cert-manager, ingress, policy) | One chart each | Speed 2. The other apps stay. |
+| Tenant apps | One chart each | Speed 2. The platform profile stays. |
+
+A new node boots an image composed from the profile's current pins: the OS image, the runtime package, and the kubelet package. Day 2 on a node that is already in the cluster applies the one pin the wave names. A chart wave does not wait for an image build. A kubelet wave does not either. Only an OS wave does.
+
+On a mutable host the package installs and the service restarts. On an immutable disk the package is a layer, and the node rolls onto the composed disk. The kernel layer's digest is unchanged, so the mirror did not take a new OS image. The drain is the same length. The build and the mirror of the large artifact are the part you skip.
+
+The chart is up before the node takes workloads. The node stays NotReady until the CNI DaemonSet is ready. That wait is a pod start. The CNI binary stays in the chart, which is the EKS `vpc-cni` shape. GKE Dataplane V2 and EKS Anywhere Cilium ship it with the node, so the same fix drains. EKS also keeps `aws-ebs-csi-driver`, `kube-proxy`, and `coredns` as add-ons. The AMI still carries the kubelet and containerd. The ideal takes those two out of the image as well, the way RKE2 already installs Kubernetes as a package and leaves the kernel to the OS.
+
+| In the image today | The separate wave that image collapses |
+| --- | --- |
+| CNI, CSI | A DaemonSet. OpenShift OVN and GKE GCE PD CSI move with the platform build. |
+| kube-proxy, CoreDNS | A DaemonSet. AKS and GKE move them with the node. EKS does not. |
+| Kubelet, container runtime | A host-package drain, image pin held. The EKS AMI, the NKP CAPX image, and the OpenShift ostree commit move them with the OS. |
+| Prometheus, ingress, monitoring | A chart. OpenShift monitoring ships in the payload, so the fix waits for the z-stream and the node reboot that payload includes. |
+
+A chart cannot be marked `image` or `host-level`. A kernel-module package is marked `image`, and the wave it opens is speed 3, with the chart named as the wave that follows. The package row is the map.
 
 ## One wave, one component
 
@@ -44,7 +76,7 @@ A wave is the only way a version changes.
 
 | Field | Meaning |
 | --- | --- |
-| `component` | One row from the table above. |
+| `component` | One row from [Components](#components). |
 | `from`, `to` | The version leaving and the version entering. |
 | `rings` | Ordered. The next ring waits for the gate. |
 | `concurrency` | Clusters in the current ring that move at once. A speed 3 wave also carries `maxSurge` and `maxUnavailable` inside each cluster. |
@@ -210,7 +242,7 @@ The package row already says the speed. You do not keep a private map of which v
 | A wave names one component. | The API rejects a wave that sets two version fields. |
 | The artifact digest is in the mirror for every site the ring covers. | The wave stays pending. The cell reads `artifact missing`. |
 | The package's Kubernetes range covers that cluster's control plane and kubelet. | Those clusters are listed and left out. The rest proceed. |
-| A package marked host-level ships as speed 3. | The wave is speed 3, with the drain visible, before it starts. |
+| A package marked `image` or `host-level` ships as speed 3. A chart cannot carry either mark. | The wave is speed 3, with the drain visible, before it starts. `image` publishes a new OS digest. `host-level` leaves that digest. |
 | Spoke drift reconciles to the profile. | The cell stays `drifting` until actual matches desired. A hand edit does not become the new desired. |
 | `maxFailed` defaults to zero. | One degraded cluster stops the ring. |
 | Two speed 3 waves do not overlap on one cluster. | The second waits. |
